@@ -1,1 +1,13 @@
+-- Loader For BlackAir Auto Farm!
+if not _G.BlackAirLoaded then
+    _G.BlackAirLoaded = true
 
+    local success, result = pcall(function()
+        local source = game:HttpGet("https://raw.githubusercontent.com/MrEye12/BlackAir/main/auto%20farm")
+        loadstring(source)()
+    end)
+
+    if not success then
+        warn("[BlackAir AutoFarm] Error :", result)
+    end
+end
