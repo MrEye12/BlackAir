@@ -43,7 +43,9 @@ local Window = Rayfield:CreateWindow({
 local Tab = Window:CreateTab("Settings", 4483362458)
 
 -- === AutoExec Toggle ===
-Tab:CreateToggle({
+local toggleRef = nil  -- Referenz speichern
+
+toggleRef = Tab:CreateToggle({
     Name = "AutoExec",
     CurrentValue = getgenv().autoexec_enabled,
     Flag = "ToggleAutoExec",
@@ -91,14 +93,22 @@ Tab:CreateButton({
     end,
 })
 
--- === AutoExec Status beim Start laden ===
+-- === AutoExec Status beim Start laden + UI synchronisieren ===
 local function loadStatus()
     local ok, content = pcall(function()
         return readfile("BlackAir/autoexec_status.txt")
     end)
     if ok and content then
-        getgenv().autoexec_enabled = (content:lower() == "true")
-        dbg("AutoExec geladen: " .. tostring(getgenv().autoexec_enabled))
+        local value = (content:lower() == "true")
+        getgenv().autoexec_enabled = value
+        dbg("AutoExec geladen: " .. tostring(value))
+
+        -- === Toggle visuell synchronisieren ===
+        if toggleRef then
+            pcall(function()
+                toggleRef:Set(value)
+            end)
+        end
     else
         dbg("Kein gespeicherter AutoExec Status.")
     end
