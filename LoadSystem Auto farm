@@ -1,1 +1,119 @@
---
+if not getgenv then return end
+
+-- === AutoExec Status laden ===
+getgenv().autoexec_enabled = false
+
+local function dbg(msg)
+    print("[AutoFarmUI] " .. msg)
+end
+
+local success, result = pcall(function()
+    return readfile("BlackAir/autoexec_status.txt")
+end)
+
+if success and result then
+    getgenv().autoexec_enabled = result:lower() == "true"
+    dbg("AutoExec Status geladen: " .. tostring(getgenv().autoexec_enabled))
+else
+    dbg("Kein AutoExec-Status gefunden. Setze Standard auf 'false'")
+end
+
+-- === Services laden ===
+local Players         = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService     = game:GetService("HttpService")
+local LocalPlayer     = Players.LocalPlayer
+
+-- === Rayfield laden ===
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- === UI erstellen ===
+local Window = Rayfield:CreateWindow({
+   Name = "BlackAir Auto Farm (EGG)",
+   LoadingTitle = "BlackAir Auto Farm",
+   LoadingSubtitle = "by BlackAir Team",
+   Theme = "Default",
+
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "BlackAir",
+      FileName = "sigma"
+   },
+
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true
+   },
+
+   KeySystem = false
+})
+
+local AutoFarm = Window:CreateTab("Settings", 4483362458)
+
+-- === Toggle erstellen ===
+local Toggle = AutoFarm:CreateToggle({
+   Name = "AutoExec",
+   CurrentValue = getgenv().autoexec_enabled,
+   Flag = "ToggleAutoExec",
+   Callback = function(Value)
+      getgenv().autoexec_enabled = Value
+      dbg("AutoExec gesetzt auf: " .. tostring(Value))
+      local ok, err = pcall(function()
+         writefile("BlackAir/autoexec_status.txt", tostring(Value))
+      end)
+      if not ok then
+         dbg("Fehler beim Speichern: " .. err)
+      end
+   end,
+})
+
+-- === ServerHop Button ===
+local Button = AutoFarm:CreateButton({
+   Name = "Server Hop",
+   Callback = function()
+        local placeId, jobId = game.PlaceId, game.JobId
+        local reqf = syn and syn.request or http and http.request or http_request or request
+        local servers = {}
+
+        local ok, res = pcall(function()
+            return HttpService:JSONDecode(reqf({
+                Url = ("https://games.roblox.com/v1/games/%d/servers/Public?limit=100"):format(placeId),
+                Method = "GET"
+            }).Body)
+        end)
+
+        if ok and res and res.data then
+            for _, s in ipairs(res.data) do
+                if s.playing < s.maxPlayers and s.id ~= jobId then
+                    table.insert(servers, s.id)
+                end
+            end
+        else
+            dbg("Fehler beim Laden der Serverliste")
+        end
+
+        if #servers > 0 then
+            task.wait(0.5)
+            TeleportService:TeleportToPlaceInstance(placeId, servers[math.random(#servers)], LocalPlayer)
+        else
+            dbg("Keine freien Server gefunden")
+        end
+   end,
+})
+
+-- === AutoExec-Code ausführen ===
+if getgenv().autoexec_enabled then
+    dbg("AutoExec aktiviert, Code wird ausgeführt")
+loadstring(game:HttpGet('https://raw.githubusercontent.com/MrEye12/BlackAir/refs/heads/main/auto%20farm'))()
+    print("AutoFarm aktiv!")
+end
+
+-- === AutoExec bei ServerHop vormerken ===
+local teleport_script = "loadstring(game:HttpGet('https://raw.githubusercontent.com/MrEye12/BlackAir/refs/heads/main/LoadSystem%20Auto%20farm'))()"
+
+if syn and syn.queue_on_teleport then
+    syn.queue_on_teleport(teleport_script)
+elseif queue_on_teleport then
+    queue_on_teleport(teleport_script)
+end
