@@ -1,3 +1,4 @@
+-- for any Skids you cant copy nofing its only auto exec system :D
 if not getgenv then return end
 getgenv().autoexec_enabled = getgenv().autoexec_enabled or false
 
