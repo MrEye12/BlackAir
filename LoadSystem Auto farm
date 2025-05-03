@@ -1,1 +1,106 @@
-..
+-- === Sicherheits-Check ===
+if not getgenv then return end
+
+-- === AutoExec aktivieren/laden ===
+getgenv().autoexec_enabled = getgenv().autoexec_enabled or false
+
+-- === Services ===
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+
+-- === Debug ===
+local function dbg(msg)
+    print("[BlackAir] "..msg)
+end
+
+-- === Rayfield laden ===
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- === UI ===
+local Window = Rayfield:CreateWindow({
+    Name = "BlackAir Auto Farm (EGG)",
+    LoadingTitle = "BlackAir Auto Farm",
+    LoadingSubtitle = "by BlackAir Team",
+    Theme = "Default",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "BlackAir",
+        FileName = "settings"
+    },
+    Discord = { Enabled = false },
+    KeySystem = false
+})
+
+local Tab = Window:CreateTab("Settings", 4483362458)
+
+-- === AutoExec Toggle ===
+Tab:CreateToggle({
+    Name = "AutoExec",
+    CurrentValue = getgenv().autoexec_enabled,
+    Flag = "ToggleAutoExec",
+    Callback = function(val)
+        getgenv().autoexec_enabled = val
+        local ok, err = pcall(function()
+            writefile("BlackAir/autoexec_status.txt", tostring(val))
+        end)
+        if not ok then dbg("Fehler beim Speichern: " .. err) end
+    end,
+})
+
+-- === ServerHop Button ===
+Tab:CreateButton({
+    Name = "Server Hop",
+    Callback = function()
+        local placeId, jobId = game.PlaceId, game.JobId
+        local reqf = syn and syn.request or http_request or request
+        local servers = {}
+
+        local ok, res = pcall(function()
+            return HttpService:JSONDecode(reqf({
+                Url = ("https://games.roblox.com/v1/games/%d/servers/Public?limit=100"):format(placeId),
+                Method = "GET"
+            }).Body)
+        end)
+
+        if ok and res and res.data then
+            for _, s in ipairs(res.data) do
+                if s.playing < s.maxPlayers and s.id ~= jobId then
+                    table.insert(servers, s.id)
+                end
+            end
+        else
+            dbg("Fehler beim Server abrufen.")
+        end
+
+        if #servers > 0 then
+            local teleportTo = servers[math.random(#servers)]
+            task.wait(0.5)
+            TeleportService:TeleportToPlaceInstance(placeId, teleportTo, LocalPlayer)
+        else
+            dbg("Keine freien Server gefunden.")
+        end
+    end,
+})
+
+-- === AutoExec Status beim Start laden ===
+local function loadStatus()
+    local ok, content = pcall(function()
+        return readfile("BlackAir/autoexec_status.txt")
+    end)
+    if ok and content then
+        getgenv().autoexec_enabled = (content:lower() == "true")
+        dbg("AutoExec geladen: " .. tostring(getgenv().autoexec_enabled))
+    else
+        dbg("Kein gespeicherter AutoExec Status.")
+    end
+end
+
+loadStatus()
+
+-- === AutoExec ausführen ===
+if getgenv().autoexec_enabled then
+    dbg("AutoExec wird ausgeführt...")
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/MrEye12/BlackAir/refs/heads/main/auto%20farm'))()
+end
