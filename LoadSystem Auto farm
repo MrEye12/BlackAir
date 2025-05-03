@@ -1,24 +1,16 @@
--- === Sicherheits-Check ===
 if not getgenv then return end
-
--- === AutoExec aktivieren/laden ===
 getgenv().autoexec_enabled = getgenv().autoexec_enabled or false
 
--- === Services ===
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
--- === Debug ===
 local function dbg(msg)
-    print("[BlackAir] "..msg)
+    print("[BlackAir] " .. msg)
 end
 
--- === Rayfield laden ===
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
--- === UI ===
 local Window = Rayfield:CreateWindow({
    Name = "BlackAir Auto Farm (EGG)",
    LoadingTitle = "BlackAir Auto Farm",
@@ -39,11 +31,9 @@ local Window = Rayfield:CreateWindow({
 
    KeySystem = false
 })
-
 local Tab = Window:CreateTab("Settings", 4483362458)
 
--- === AutoExec Toggle ===
-local toggleRef = nil  -- Referenz speichern
+local toggleRef = nil  -- Store toggle reference
 
 toggleRef = Tab:CreateToggle({
     Name = "AutoExec",
@@ -54,11 +44,10 @@ toggleRef = Tab:CreateToggle({
         local ok, err = pcall(function()
             writefile("BlackAir/autoexec_status.txt", tostring(val))
         end)
-        if not ok then dbg("Fehler beim Speichern: " .. err) end
+        if not ok then dbg("Error while saving: " .. err) end
     end,
 })
 
--- === ServerHop Button ===
 Tab:CreateButton({
     Name = "Server Hop",
     Callback = function()
@@ -80,7 +69,7 @@ Tab:CreateButton({
                 end
             end
         else
-            dbg("Fehler beim Server abrufen.")
+            dbg("Failed to fetch server list.")
         end
 
         if #servers > 0 then
@@ -88,12 +77,11 @@ Tab:CreateButton({
             task.wait(0.5)
             TeleportService:TeleportToPlaceInstance(placeId, teleportTo, LocalPlayer)
         else
-            dbg("Keine freien Server gefunden.")
+            dbg("No available servers found.")
         end
     end,
 })
 
--- === AutoExec Status beim Start laden + UI synchronisieren ===
 local function loadStatus()
     local ok, content = pcall(function()
         return readfile("BlackAir/autoexec_status.txt")
@@ -101,23 +89,22 @@ local function loadStatus()
     if ok and content then
         local value = (content:lower() == "true")
         getgenv().autoexec_enabled = value
-        dbg("AutoExec geladen: " .. tostring(value))
+        dbg("AutoExec loaded: " .. tostring(value))
 
-        -- === Toggle visuell synchronisieren ===
+        -- === Sync toggle visually ===
         if toggleRef then
             pcall(function()
                 toggleRef:Set(value)
             end)
         end
     else
-        dbg("Kein gespeicherter AutoExec Status.")
+        dbg("No saved AutoExec status found.")
     end
 end
 
 loadStatus()
 
--- === AutoExec ausführen ===
 if getgenv().autoexec_enabled then
-    dbg("AutoExec wird ausgeführt...")
+    dbg("AutoExec is running...")
     loadstring(game:HttpGet('https://raw.githubusercontent.com/MrEye12/BlackAir/refs/heads/main/auto%20farm'))()
 end
